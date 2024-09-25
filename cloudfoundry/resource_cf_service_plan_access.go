@@ -107,8 +107,13 @@ func resourceServicePlanAccessRead(ctx context.Context, d *schema.ResourceData, 
 func resourceServicePlanAccessDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	session := meta.(*managers.Session)
 
-	_, hasOrg := d.GetOk("org")
-	if !hasOrg {
+	if _, hasOrg := d.GetOk("org"); !hasOrg {
+		if public, hasPublic := d.GetOk("public"); hasPublic {
+			if public.(bool) {
+				_, err := session.ClientV2.UpdateServicePlan(d.Id(), false)
+				return diag.FromErr(err)
+			}
+		}
 		return nil
 	}
 	_, err := session.ClientV2.DeleteServicePlanVisibility(d.Id())
